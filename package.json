@@ -1,0 +1,24 @@
+{
+  "name": "devreg",
+  "version": "1.0.0",
+  "description": "A blockchain-based registry for developers",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "devreg",
+    "developer_registry",
+    "developer",
+    "dev",
+    "solidity",
+    "blockchain",
+    "web3"
+  ],
+  "author": "Devvie",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^1.0.1",
+    "hardhat": "^2.10.1"
+  }
+}
