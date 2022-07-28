@@ -4,6 +4,7 @@
   "description": "A blockchain-based registry for developers",
   "main": "index.js",
   "scripts": {
+    "start": "cls && hardhat run ./scripts/deploy.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

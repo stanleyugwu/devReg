@@ -1,18 +1,27 @@
 import { ethers } from "hardhat";
+import { DevReg__factory, String__factory } from "../typechain-types/index";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  const String = (await ethers.getContractFactory("String")) as String__factory;
+  const stringLib = await (await String.deploy()).deployed();
 
-  const lockedAmount = ethers.utils.parseEther("1");
+  const DegReg = (await ethers.getContractFactory("DevReg", {
+    libraries: { String: stringLib.address },
+  })) as DevReg__factory;
+  const devreg = await DegReg.deploy();
 
-  const Lock = await ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  await devreg.deployed();
 
-  await lock.deployed();
-
-  console.log("Lock with 1 ETH deployed to:", lock.address);
+  await devreg.functions.register(
+    "devvie",
+    "web3 developer",
+    "Cool",
+    true,
+    "github.com/stanleyugwu",
+    "github.com/stanleyugwu.png"
+  );
+  console.log(await devreg.functions.namesByAddress((await ethers.getSigners())[0].address));
+  console.log(await devreg.functions.developers("devvie"))
 }
 
 // We recommend this pattern to be able to use async/await everywhere
