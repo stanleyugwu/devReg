@@ -13,8 +13,8 @@ struct DevInfo {
     uint256 reputationPoints;
     // Whether the developer is open to jobs or employment
     bool openToWork;
-    // Developer's Github profile URL
-    string githubUrl;
+    // Developer's Github username
+    string githubUsername;
     // Registeration date
     uint256 regDate;
     // Link to dev's pic
@@ -91,7 +91,7 @@ contract DevReg is IDevReg {
     function _otherInputsValidation(
         string memory title,
         string memory bio,
-        string memory githubUrl,
+        string memory githubUsername,
         string memory devPicUrl
     ) private pure {
 
@@ -102,17 +102,10 @@ contract DevReg is IDevReg {
         require(bio.length() < 130, "bio should be less than 130 characters");
 
         // make sure github url is valid
-        require(githubUrl.length() > 11 && githubUrl.subString(0, 11).isSameAs("github.com/"), "github url should start with 'github.com/'");
+        require(githubUsername.length() > 0 , "provide a valid github username");
 
-        // make sure dev pic url is valid i.e points to an image
-        require(devPicUrl.length() > 5, "provide a valid image url");
-        require(
-            devPicUrl.subString(devPicUrl.length() - 4, devPicUrl.length()).isSameAs(".jpg",".JPG") ||
-            devPicUrl.subString(devPicUrl.length() - 4, devPicUrl.length()).isSameAs(".png",".PNG") ||
-            devPicUrl.subString(devPicUrl.length() - 4, devPicUrl.length()).isSameAs(".gif", ".GIF") ||
-            devPicUrl.subString(devPicUrl.length() - 5, devPicUrl.length()).isSameAs(".jpeg", ".JPEG"),
-            "Image URL should point to a valid image file with case-insensitive .jpg, .png, .gif, or .jpeg extension"
-        );
+        // make sure dev pic url is valid
+        require(devPicUrl.length() > 5, "provide a valid image url. It should end with an image extension");
     }
 
     /**********************************************************************************
@@ -126,7 +119,7 @@ contract DevReg is IDevReg {
         string memory title,
         string memory bio,
         bool openToWork,
-        string memory githubUrl,
+        string memory githubUsername,
         string memory devPicUrl
     ) public returns (bool) {
         // makes sure caller doesn't have a registered name already
@@ -138,15 +131,15 @@ contract DevReg is IDevReg {
         require(
             !(title).isEmptyOrSpace() &&
             !(bio).isEmptyOrSpace() &&
-            !(githubUrl).isEmptyOrSpace() &&
+            !(githubUsername).isEmptyOrSpace() &&
             !(devPicUrl).isEmptyOrSpace(),
             "Please provide all paramters"
         );
         
         // handle common username validations
         _usernameValidation(username);
-        // handle other inputs validations for: title, bio, githubUrl, devPicUrl
-        _otherInputsValidation(title, bio, githubUrl, devPicUrl);
+        // handle other inputs validations for: title, bio, githubUsername, devPicUrl
+        _otherInputsValidation(title, bio, githubUsername, devPicUrl);
 
         // finally register name
         namesByAddress[msg.sender] = username;
@@ -155,7 +148,7 @@ contract DevReg is IDevReg {
             bio:bio,
             reputationPoints:0,
             openToWork:openToWork,
-            githubUrl:githubUrl,
+            githubUsername:githubUsername,
             regDate:block.timestamp,
             devPicUrl:devPicUrl,
             walletAddress:payable(msg.sender)
@@ -192,7 +185,7 @@ contract DevReg is IDevReg {
         string memory title,
         string memory bio,
         bool openToWork,
-        string calldata githubUrl,
+        string calldata githubUsername,
         string memory devPicUrl
     ) public returns (bool){
         // assert caller has a registered name
@@ -203,20 +196,20 @@ contract DevReg is IDevReg {
         require(
             !(title).isEmptyOrSpace() &&
             !(bio).isEmptyOrSpace() &&
-            !(githubUrl).isEmptyOrSpace() &&
+            !(githubUsername).isEmptyOrSpace() &&
             !(devPicUrl).isEmptyOrSpace(),
             "Please provide all paramters"
         );
 
-        // handle other inputs validations for: title, bio, githubUrl, devPicUrl
-        _otherInputsValidation(title, bio, githubUrl, devPicUrl);
+        // handle other inputs validations for: title, bio, githubUsername, devPicUrl
+        _otherInputsValidation(title, bio, githubUsername, devPicUrl);
 
         // At this point, everything is fine. Lets apply updates
         DevInfo storage devInfo = developers[callersName];
         devInfo.title = title;
         devInfo.bio = bio;
         devInfo.openToWork = openToWork;
-        devInfo.githubUrl = githubUrl;
+        devInfo.githubUsername = githubUsername;
         devInfo.devPicUrl = devPicUrl;
 
         emit LogInfoUpdated(msg.sender);
