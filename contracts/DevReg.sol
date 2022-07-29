@@ -5,6 +5,9 @@ import './interfaces/IDevReg.sol';
 
 // The data structure of individual developer
 struct DevInfo {
+    // Developer's username. This won't be touched after creation we're just keeping this field
+    // to be able to return full info for all developers
+    string username;
     // Developer's title (<= 50 characters) e.g "Fullstack developer"
     string title;
     // Developer's short bio (<= 100 characters)
@@ -43,6 +46,11 @@ contract DevReg is IDevReg {
 
     // mapping from username to addresses of its reputators
     mapping(string => address[]) public reputators;
+
+    // arrays of addresses that has registered name
+    // this array will be useful when returning all names or developers
+    // since we cant return mapping
+    string[] public names;
 
 
     /*/////////////////////////////////////////////////////////////////////////////////
@@ -144,6 +152,7 @@ contract DevReg is IDevReg {
         // finally register name
         namesByAddress[msg.sender] = username;
         developers[username] = DevInfo({
+            username:username,
             title: title,
             bio:bio,
             reputationPoints:0,
@@ -153,6 +162,8 @@ contract DevReg is IDevReg {
             devPicUrl:devPicUrl,
             walletAddress:payable(msg.sender)
         });
+        // push to names array
+        names.push(username);
 
         emit LogRegistered(username, msg.sender);
         return true;
@@ -171,10 +182,19 @@ contract DevReg is IDevReg {
         // At this point, caller has a valid name and the new username is available
         // let's just move the caller's info to the new username and free up the old username's info
         DevInfo memory callerInfo = developers[oldName];
+        callerInfo.username = newUsername;
+        
         developers[newUsername] = callerInfo;
         namesByAddress[caller] = newUsername;
 
         delete developers[oldName];
+
+        // replace oldname in names array
+        for(uint i; i < names.length;i++){
+            if(names[i].isSameAs(oldName)){
+                names[i] = newUsername;
+            }
+        }
 
         emit LogUsernameUpdated(newUsername, caller);
         return true;
@@ -226,6 +246,13 @@ contract DevReg is IDevReg {
         delete developers[callersName];
         delete namesByAddress[msg.sender];
         delete reputators[callersName];
+
+        // delete name from names array
+        for(uint i; i < names.length;i++){
+            if(names[i].isSameAs(callersName)){
+                delete names[i];
+            }
+        }
 
         emit LogNameDisowned(callersName, msg.sender);
         return true;
@@ -290,5 +317,27 @@ contract DevReg is IDevReg {
 
         return true;
     }
+
+    // /// @notice Returns all registered developers
+    // /// @dev Returns all developers and their full info if they exist and empty zero-initialised list
+    // /// retur Boolean indicating whether registered developers was found and will be returned.
+    // /// It will return false when no registered voter was found
+    // /// @return A list of all developers with their full info if they exist, 
+    // /// and a zero-initialised `DevInfo` array otherwise
+    // function getAllDevs() public view returns(Dev) {
+    //     DevInfo[] memory allDevs;
+
+    //     // make sure there's registered names
+    //     if(names.length != 0){
+    //         // construct array of devs from names array if there are names
+    //         for(uint i; i < names.length;i++){
+    //             string memory name = names[i];
+    //             DevInfo memory devInfo = developers[name];
+    //             allDevs[i] = devInfo;
+    //         }
+    //     }
+
+    //     // return allDevs;
+    // }
     
 }
