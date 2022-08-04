@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
-import * as Lib from './libraries/String.sol';
-import './interfaces/IDevReg.sol';
+import {String} from "./libraries/String.sol";
+import "./interfaces/IDevReg.sol";
 
 // The data structure of individual developer
 struct DevInfo {
@@ -26,23 +26,36 @@ struct DevInfo {
     address payable walletAddress;
 }
 
+// This struct will be used for mapping from address.
+// It will store the registered name of the address it maps from, along with the index of the name in
+// names array for easy deletion
+struct Username {
+    uint256 index;
+    string name;
+}
+
 /**
  * @author Devvie
  * @title DevReg - An info registry for software developers
  */
 contract DevReg is IDevReg {
-    using Lib.String for string;
+    using String for string;
 
     // contract owner's address
     address payable public immutable owner;
 
-    constructor(){owner = payable(msg.sender);}
+    constructor() {
+        owner = payable(msg.sender);
+    }
+
+    // This number will be used for indexing names
+    uint256 private count = 0;
 
     // mapping from username to developer info
     mapping(string => DevInfo) public developers;
 
-    // mapping from developer address to username
-    mapping(address => string) public namesByAddress;
+    // mapping from developer address to Username struct
+    mapping(address => Username) public namesByAddress;
 
     // mapping from username to addresses of its reputators
     mapping(string => address[]) public reputators;
@@ -50,49 +63,51 @@ contract DevReg is IDevReg {
     // arrays of addresses that has registered name
     // this array will be useful when returning all names or developers
     // since we cant return mapping
-    string[] public names;
-
+    string[] private names;
 
     /*/////////////////////////////////////////////////////////////////////////////////
-    ** EVENTS
-    *//////////////////////////////////////////////////////////////////////////////////
-    event LogRegistered(string indexed _username, address indexed _owner);
-    event LogUsernameUpdated(string indexed _newUsername, address indexed _owner);
+     ** EVENTS
+     */
+    /////////////////////////////////////////////////////////////////////////////////
+
+    event LogRegistered(string _username, address _owner);
+    event LogUsernameUpdated(string _newUsername, address _owner);
     event LogInfoUpdated(address indexed _owner);
-    event LogNameDisowned(string indexed _disonwnedName, address indexed _disowner);
-    event LogReputationGiven(string indexed _reputedName, uint _newRepPoint);
-    event LogWithdrawal(uint indexed _amount);
+    event LogNameDisowned(string _disonwnedName, address indexed _disowner);
+    event LogReputationGiven(string _reputedName, uint256 _newRepPoint);
+    event LogWithdrawal(uint256 indexed _amount);
+
     /*/*********************************************************************************
-    ** EVENTS END
-    **********************************************************************************/
+     ** EVENTS END
+     **********************************************************************************/
 
-
-    
     /*/////////////////////////////////////////////////////////////////////////////////
-    ** INPUT VALIDATORS
-    *//////////////////////////////////////////////////////////////////////////////////
+     ** INPUT VALIDATORS
+     */
+    /////////////////////////////////////////////////////////////////////////////////
 
     /// @notice Handles common username validations
     function _usernameValidation(string memory username) private view {
         // make sure username is provided
-        require(
-            !(username).isEmptyOrSpace(),
-            "provide a valid username"
-        );
+        require(!(username).isEmptyOrSpace(), "provide a valid username");
 
         // make sure username is not taken
         require(developers[username].regDate == 0, "Username already taken");
 
         // make sure username doesn't have any space
         bytes memory strByt = bytes(username);
-        for(uint char; char < strByt.length;char++){
-            if(
-                keccak256(abi.encodePacked(strByt[char])) == keccak256(abi.encodePacked(bytes1(" ")))
+        for (uint256 char; char < strByt.length; char++) {
+            if (
+                keccak256(abi.encodePacked(strByt[char])) ==
+                keccak256(abi.encodePacked(bytes1(" ")))
             ) revert("username can't contain spaces");
         }
 
         // make sure username > 1 and < 30 chars
-        require(username.length() > 1 && username.length() < 30, "username should be less than 30 characters");
+        require(
+            username.length() > 1 && username.length() < 30,
+            "username should be less than 30 characters"
+        );
     }
 
     /// @notice Handles validation for other registeration inputs apart from username
@@ -102,24 +117,28 @@ contract DevReg is IDevReg {
         string memory githubUsername,
         string memory devPicUrl
     ) private pure {
-
         // make sure title is < 50 chars
-        require(title.length() < 50, "title should be less than 50 characters");
-        
+        require(
+            title.length() > 0 && (title.length() < 50),
+            "provide valid title, it should be less than 50 characters"
+        );
+
         // make sure bio is < 130 chars
         require(bio.length() < 130, "bio should be less than 130 characters");
 
         // make sure github url is valid
-        require(githubUsername.length() > 0 , "provide a valid github username");
+        require(githubUsername.length() > 0, "provide a valid github username");
 
         // make sure dev pic url is valid
-        require(devPicUrl.length() > 5, "provide a valid image url. It should end with an image extension");
+        require(
+            devPicUrl.length() > 5,
+            "provide a valid image url. It should end with an image extension"
+        );
     }
 
     /**********************************************************************************
-    ** INPUT VALIDATORS END
-    **********************************************************************************/
-
+     ** INPUT VALIDATORS END
+     **********************************************************************************/
 
     /// @notice See {IDevReg - register}
     function register(
@@ -129,75 +148,69 @@ contract DevReg is IDevReg {
         bool openToWork,
         string memory githubUsername,
         string memory devPicUrl
-    ) public returns (bool) {
+    ) public returns (bool __success) {
+        address caller = msg.sender;
         // makes sure caller doesn't have a registered name already
-        require(namesByAddress[msg.sender].isEmpty(),
+        require(
+            namesByAddress[caller].name.isEmpty(),
             "You can't register more than one name"
         );
 
-        // require provision of all parameters
-        require(
-            !(title).isEmptyOrSpace() &&
-            !(bio).isEmptyOrSpace() &&
-            !(githubUsername).isEmptyOrSpace() &&
-            !(devPicUrl).isEmptyOrSpace(),
-            "Please provide all paramters"
-        );
-        
         // handle common username validations
         _usernameValidation(username);
         // handle other inputs validations for: title, bio, githubUsername, devPicUrl
         _otherInputsValidation(title, bio, githubUsername, devPicUrl);
 
         // finally register name
-        namesByAddress[msg.sender] = username;
+        namesByAddress[caller] = Username(count++, username);
         developers[username] = DevInfo({
-            username:username,
+            username: username,
             title: title,
-            bio:bio,
-            reputationPoints:0,
-            openToWork:openToWork,
-            githubUsername:githubUsername,
-            regDate:block.timestamp,
-            devPicUrl:devPicUrl,
-            walletAddress:payable(msg.sender)
+            bio: bio,
+            reputationPoints: 0,
+            openToWork: openToWork,
+            githubUsername: githubUsername,
+            regDate: block.timestamp,
+            devPicUrl: devPicUrl,
+            walletAddress: payable(caller)
         });
-        // push to names array
+        // push to names array, we cant add array items by index e.g names[8] = value
         names.push(username);
 
-        emit LogRegistered(username, msg.sender);
-        return true;
+        emit LogRegistered(username, caller);
+
+        __success = true; // return bool
     }
 
     /// @notice See {IDevReg - updateUsername}
-    function updateUsername(string memory newUsername) public returns (bool) {
+    function updateUsername(string memory newUsername)
+        public
+        returns (bool __success)
+    {
         // validate new username
         _usernameValidation(newUsername);
 
         // make sure caller owns a valid name
         address caller = msg.sender;
-        string memory oldName = namesByAddress[caller];
+        string memory oldName = namesByAddress[caller].name;
         require(oldName.length() > 0, "You don't own a name");
-        
+
         // At this point, caller has a valid name and the new username is available
         // let's just move the caller's info to the new username and free up the old username's info
-        DevInfo memory callerInfo = developers[oldName];
-        callerInfo.username = newUsername;
-        
-        developers[newUsername] = callerInfo;
-        namesByAddress[caller] = newUsername;
+        DevInfo storage callerInfo = developers[oldName]; // old name info
+        callerInfo.username = newUsername; // update username in old name info
 
-        delete developers[oldName];
+        developers[newUsername] = callerInfo; // create new entry
+        namesByAddress[caller].name = newUsername; // update info in `namesByAddress`
+
+        delete developers[oldName]; // delete from developers mapping
 
         // replace oldname in names array
-        for(uint i; i < names.length;i++){
-            if(names[i].isSameAs(oldName)){
-                names[i] = newUsername;
-            }
-        }
+        uint256 nameIndex = namesByAddress[caller].index;
+        names[nameIndex] = newUsername; // change username in names
 
         emit LogUsernameUpdated(newUsername, caller);
-        return true;
+        __success = true;
     }
 
     /// @notice See {IDevReg - updateInfo}
@@ -207,19 +220,10 @@ contract DevReg is IDevReg {
         bool openToWork,
         string calldata githubUsername,
         string memory devPicUrl
-    ) public returns (bool){
+    ) public returns (bool __success) {
         // assert caller has a registered name
-        string memory callersName = namesByAddress[msg.sender];
+        string memory callersName = namesByAddress[msg.sender].name;
         require(callersName.length() > 0, "You don't own a name");
-
-        // require provision of all parameters
-        require(
-            !(title).isEmptyOrSpace() &&
-            !(bio).isEmptyOrSpace() &&
-            !(githubUsername).isEmptyOrSpace() &&
-            !(devPicUrl).isEmptyOrSpace(),
-            "Please provide all paramters"
-        );
 
         // handle other inputs validations for: title, bio, githubUsername, devPicUrl
         _otherInputsValidation(title, bio, githubUsername, devPicUrl);
@@ -233,81 +237,92 @@ contract DevReg is IDevReg {
         devInfo.devPicUrl = devPicUrl;
 
         emit LogInfoUpdated(msg.sender);
-        return true;
+        __success = true;
     }
 
     /// @notice See {IDevReg - disOwn}
-    function disOwn() public returns (bool) {
+    function disOwn() public returns (bool __success) {
         // assert caller has a registered name
-        string memory callersName = namesByAddress[msg.sender];
+        string memory callersName = namesByAddress[msg.sender].name;
         require(callersName.length() > 0, "You don't own a name");
 
-        // delete caller's name, info, and reputators
+        // delete name from developers entry
         delete developers[callersName];
+
+        // delete name from names array
+        uint256 nameIndex = namesByAddress[msg.sender].index;
+        delete names[nameIndex];
+
+        // delete name from namesByAddress and clear the reputations
         delete namesByAddress[msg.sender];
         delete reputators[callersName];
 
-        // delete name from names array
-        for(uint i; i < names.length;i++){
-            if(names[i].isSameAs(callersName)){
-                delete names[i];
-            }
-        }
-
         emit LogNameDisowned(callersName, msg.sender);
-        return true;
+
+        __success = true;
     }
 
     /// @notice See {IDevReg - giveReputation}
-    function giveReputation(string memory username) public payable returns (uint){
+    function giveReputation(string memory username)
+        public
+        payable
+        returns (uint256 __newRep)
+    {
         // make sure username is provided
-        require(
-            !(username).isEmptyOrSpace(),
-            "provide a valid username"
-        );
+        require(!(username).isEmptyOrSpace(), "provide a valid username");
 
         // make sure username exists
-        DevInfo memory devInfo = developers[username];
+        DevInfo storage devInfo = developers[username];
         require(devInfo.regDate != 0, "username is not owned by anyone");
 
         // make sure name is not owned by caller
         require(
-            devInfo.walletAddress != msg.sender, 
+            devInfo.walletAddress != msg.sender,
             "You can't give yourself reps"
         );
 
         // make sure reputator sends >= 10 wei for the reputation
-        require(msg.value >= 10 wei, "you must pay atleast 10 wei to give reputations");
+        require(
+            msg.value >= 10 wei,
+            "you must pay atleast 10 wei to give reputations"
+        );
 
         // make sure reputator haven't given name's owner reps before
         address[] memory _reputatorsArr = reputators[username];
-        for(uint rep; rep < _reputatorsArr.length; rep++){
-            if(_reputatorsArr[rep] == msg.sender) revert("You have already given this user reps before");
+        for (uint256 rep; rep < _reputatorsArr.length; rep++) {
+            if (_reputatorsArr[rep] == msg.sender)
+                revert("You have already given this user reps before");
         }
 
-        // At this point everything is fine, let's give that user some reps
-        devInfo.reputationPoints++;
+        // At this point everything is fine, let's give that name some reps
         reputators[username].push(msg.sender);
+        devInfo.reputationPoints++;
 
         // The money part, lets keep 5 wei and give name owner the rest
-        devInfo.walletAddress.transfer(msg.value-5);
+        devInfo.walletAddress.transfer(msg.value - 5 wei);
 
         emit LogReputationGiven(username, devInfo.reputationPoints);
-        return devInfo.reputationPoints;
+        __newRep = devInfo.reputationPoints;
     }
 
     /**
-    * @notice Allows contract owner to withdraw from contract savings
-    * @param _amount The desired amount to withdraw
-    * @return true or false depending on whether the withdrawal was successful
-    */
-    function withdraw(uint _amount) public returns(bool) {
+     * @notice Allows contract owner to withdraw from contract savings
+     * @param _amount The desired amount to withdraw
+     * @return __success true or false depending on whether the withdrawal was successful
+     */
+    function withdraw(uint256 _amount) public returns (bool __success) {
         // make caller is the owner
-        require(msg.sender == owner, "Only owner of contract can withdraw from it");
+        require(
+            msg.sender == owner,
+            "Only owner of contract can withdraw from it"
+        );
+
+        // make sure owner doesn't withdraw nothing
+        require(_amount > 0, "You can't withdraw nothing");
 
         // We'll give the owner everything if he requests for more than the contract has
-        uint contractBal = address(this).balance;
-        if(_amount > contractBal){
+        uint256 contractBal = address(this).balance;
+        if (_amount > contractBal) {
             owner.transfer(contractBal);
             emit LogWithdrawal(contractBal);
         } else {
@@ -315,29 +330,44 @@ contract DevReg is IDevReg {
             emit LogWithdrawal(_amount);
         }
 
-        return true;
+        __success = true;
     }
 
-    // /// @notice Returns all registered developers
-    // /// @dev Returns all developers and their full info if they exist and empty zero-initialised list
-    // /// retur Boolean indicating whether registered developers was found and will be returned.
-    // /// It will return false when no registered voter was found
-    // /// @return A list of all developers with their full info if they exist, 
-    // /// and a zero-initialised `DevInfo` array otherwise
-    // function getAllDevs() public view returns(Dev) {
-    //     DevInfo[] memory allDevs;
+    /// @notice Returns all registered developers
+    /// @dev Returns all developers and their full info if they exist and empty zero-initialised list
+    /// return Boolean indicating whether registered developers was found and will be returned.
+    /// It will return false when no registered voter was found
+    /// @return __allDevs A list of all developers with their full info if they exist,
+    /// and a zero-initialised `DevInfo` array otherwise
+    function getAllDevs() public view returns (DevInfo[] memory __allDevs) {
+        __allDevs = new DevInfo[](names.length);
 
-    //     // make sure there's registered names
-    //     if(names.length != 0){
-    //         // construct array of devs from names array if there are names
-    //         for(uint i; i < names.length;i++){
-    //             string memory name = names[i];
-    //             DevInfo memory devInfo = developers[name];
-    //             allDevs[i] = devInfo;
-    //         }
-    //     }
+        // make sure there's registered names
+        if (names.length != 0) {
+            // construct array of devs from names array if there are names
+            for (uint256 i; i < names.length; i++) {
+                string memory name = names[i];
+                DevInfo memory devInfo = developers[name];
+                __allDevs[i] = devInfo;
+            }
+        }
 
-    //     // return allDevs;
-    // }
-    
+        return __allDevs;
+    }
+
+    // we just return available function signatures when caller calls non-existent function
+    fallback(bytes calldata _data) external returns(bytes memory) {
+        bytes
+            memory message = "Sorry, the function you called doesn't exist. Available function signatures are:"
+            "1. function register(string memory username,string memory title,string memory bio,bool openToWork,"
+            "string memory githubUsername,string memory devPicUrl) public returns (bool __success)"
+            "2. function updateUsername(string memory newUsername) public returns (bool __success)"
+            "3. function updateInfo(string memory title,string memory bio,bool openToWork,"
+            "string calldata githubUsername,string memory devPicUrl) public returns (bool __success)"
+            "4. function disOwn() public returns (bool __success)"
+            "5. function giveReputation(string memory username) public payable returns (uint256 __newRep)"
+            "6. function withdraw(uint256 _amount) public returns (bool __success)"
+            "7. function getAllDevs() public view returns (DevInfo[] memory __allDevs)";
+        return message;
+    }
 }
