@@ -20,6 +20,8 @@
   "license": "MIT",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^1.0.1",
+    "@openzeppelin/hardhat-upgrades": "^1.19.1",
+    "dotenv": "^16.0.1",
     "hardhat": "^2.10.1"
   }
 }
