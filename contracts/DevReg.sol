@@ -49,7 +49,7 @@ contract DevReg is IDevReg {
     }
 
     // This number will be used for indexing names
-    uint256 private count = 0;
+    uint256 private count;
 
     // mapping from username to developer info
     mapping(string => DevInfo) public developers;
