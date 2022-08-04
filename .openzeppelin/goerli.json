@@ -9,6 +9,11 @@
       "address": "0xD441D2B289D5783ebD05fb2D04726Cf7C8DB37f4",
       "txHash": "0x07113db3c1fb90a3e93b2de0441055f4267b8a8de0a96871eaa30252ed47d365",
       "kind": "transparent"
+    },
+    {
+      "address": "0xF32FdE55F8c32037DA67024522904F5299207Aa8",
+      "txHash": "0xf3dd1ca94187c7b300462f07e2af5079d39846cb51731ed1857064c632e2072d",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -18,6 +23,178 @@
       "layout": {
         "storage": [],
         "types": {}
+      }
+    },
+    "c442e1c5d11881a3c1dc4d5893e6ba00aeb645f6bb236aa7a0af38d350a8aaae": {
+      "address": "0xdD48A678a7C83D3DD28f2767a4895F47740D9C8b",
+      "txHash": "0x1a25758548d334d52716aeacc73bc313daa20708a313f8d49a07df3ebd6566bb",
+      "layout": {
+        "storage": [
+          {
+            "label": "count",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256",
+            "contract": "DevReg",
+            "src": "contracts\\DevReg.sol:52"
+          },
+          {
+            "label": "developers",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_string_memory_ptr,t_struct(DevInfo)23_storage)",
+            "contract": "DevReg",
+            "src": "contracts\\DevReg.sol:55"
+          },
+          {
+            "label": "namesByAddress",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_struct(Username)28_storage)",
+            "contract": "DevReg",
+            "src": "contracts\\DevReg.sol:58"
+          },
+          {
+            "label": "reputators",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_string_memory_ptr,t_array(t_address)dyn_storage)",
+            "contract": "DevReg",
+            "src": "contracts\\DevReg.sol:61"
+          },
+          {
+            "label": "names",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_array(t_string_storage)dyn_storage",
+            "contract": "DevReg",
+            "src": "contracts\\DevReg.sol:66"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_address_payable": {
+            "label": "address payable",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_string_storage)dyn_storage": {
+            "label": "string[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_struct(Username)28_storage)": {
+            "label": "mapping(address => struct Username)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_string_memory_ptr,t_array(t_address)dyn_storage)": {
+            "label": "mapping(string => address[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_string_memory_ptr,t_struct(DevInfo)23_storage)": {
+            "label": "mapping(string => struct DevInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_string_memory_ptr": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(DevInfo)23_storage": {
+            "label": "struct DevInfo",
+            "members": [
+              {
+                "label": "username",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "title",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "bio",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "reputationPoints",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "openToWork",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "githubUsername",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "regDate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "devPicUrl",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "walletAddress",
+                "type": "t_address_payable",
+                "offset": 0,
+                "slot": "8"
+              }
+            ],
+            "numberOfBytes": "288"
+          },
+          "t_struct(Username)28_storage": {
+            "label": "struct Username",
+            "members": [
+              {
+                "label": "index",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "name",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        }
       }
     }
   }
