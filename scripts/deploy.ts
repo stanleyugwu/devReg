@@ -1,27 +1,20 @@
-import { ethers } from "hardhat";
-import { DevReg__factory, String__factory } from "../typechain-types/index";
+import { ethers, upgrades } from "hardhat";
+import { String__factory } from "../typechain-types/index";
 
 async function main() {
+  const [deployer] = await ethers.getSigners();
+
+  console.log("Deploying contracts with the account:", deployer.address);
+
+  console.log("Account balance:", (await deployer.getBalance()).toString());
+
   const String = (await ethers.getContractFactory("String")) as String__factory;
-  const stringLib = await (await String.deploy()).deployed();
+  const string = await upgrades.deployProxy(String);
 
-  const DegReg = (await ethers.getContractFactory("DevReg", {
-    libraries: { String: stringLib.address },
-  })) as DevReg__factory;
-  const devreg = await DegReg.deploy();
+  const stringLib = await string.deployed();
 
-  await devreg.deployed();
-
-  await devreg.functions.register(
-    "devvie",
-    "web3 developer",
-    "Cool",
-    true,
-    "github.com/stanleyugwu",
-    "github.com/stanleyugwu.png"
-  );
-  console.log(await devreg.functions.namesByAddress((await ethers.getSigners())[0].address));
-  console.log(await devreg.functions.developers("devvie"))
+  console.log("String Address: " + stringLib.address);
+  return true;
 }
 
 // We recommend this pattern to be able to use async/await everywhere
